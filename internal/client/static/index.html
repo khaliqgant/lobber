@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lobber Inspector</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #1a1a2e; color: #eee; }
+        h1 { color: #00d9ff; }
+        .request { background: #16213e; padding: 15px; margin: 10px 0; border-radius: 8px; cursor: pointer; }
+        .request:hover { background: #1f3460; }
+        .method { font-weight: bold; color: #00d9ff; }
+        .path { color: #fff; }
+        .status { float: right; }
+        .status.ok { color: #4ade80; }
+        .status.error { color: #f87171; }
+    </style>
+</head>
+<body>
+    <h1>Lobber Inspector</h1>
+    <div id="requests"></div>
+    <script>
+        async function loadRequests() {
+            const resp = await fetch('/api/requests');
+            const requests = await resp.json();
+            const container = document.getElementById('requests');
+            container.innerHTML = requests.map(r => `
+                <div class="request">
+                    <span class="method">${r.method}</span>
+                    <span class="path">${r.path}</span>
+                    <span class="status ${r.status_code < 400 ? 'ok' : 'error'}">${r.status_code}</span>
+                </div>
+            `).join('');
+        }
+        loadRequests();
+        setInterval(loadRequests, 1000);
+    </script>
+</body>
+</html>
