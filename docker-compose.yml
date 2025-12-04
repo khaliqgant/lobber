@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lobber
+      POSTGRES_PASSWORD: lobber
+      POSTGRES_DB: lobber
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./internal/db/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lobber"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  relay:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.relay
+    environment:
+      DATABASE_URL: postgres://lobber:lobber@postgres:5432/lobber?sslmode=disable
+      SERVICE_DOMAIN: tunnel.localhost
+      CERT_CACHE_DIR: /var/cache/lobber/certs
+      HTTP_ADDR: ":80"
+      HTTPS_ADDR: ":443"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - cert_cache:/var/cache/lobber/certs
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  cert_cache:
