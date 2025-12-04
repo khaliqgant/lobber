@@ -4,7 +4,10 @@
       "Skill(superpowers:brainstorming)",
       "mcp__mcp-agent-mail__macro_start_session",
       "Skill(superpowers:writing-plans)",
-      "mcp__mcp-agent-mail__register_agent"
+      "mcp__mcp-agent-mail__register_agent",
+      "mcp__mcp-agent-mail__fetch_inbox",
+      "mcp__mcp-agent-mail__whois",
+      "mcp__mcp-agent-mail__send_message"
     ],
     "deny": [],
     "ask": []
