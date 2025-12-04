@@ -1,0 +1,19 @@
+# Binaries
+/lobber
+/relay
+*.exe
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Local config
+.lobber/
+*.local.yaml
+
+# OS
+.DS_Store
+
+# Test coverage
+coverage.out

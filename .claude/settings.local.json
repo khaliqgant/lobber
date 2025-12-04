@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:brainstorming)",
+      "mcp__mcp-agent-mail__macro_start_session",
+      "Skill(superpowers:writing-plans)",
+      "mcp__mcp-agent-mail__register_agent"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
