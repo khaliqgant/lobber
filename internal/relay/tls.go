@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net/http"
 	"sync"
 
 	"golang.org/x/crypto/acme/autocert"
@@ -67,4 +68,8 @@ func (m *TLSManager) TLSConfig() *tls.Config {
 
 func (m *TLSManager) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	return m.certManager.GetCertificate(hello)
+}
+
+func (m *TLSManager) HTTPHandler(fallback http.Handler) http.Handler {
+	return m.certManager.HTTPHandler(fallback)
 }
