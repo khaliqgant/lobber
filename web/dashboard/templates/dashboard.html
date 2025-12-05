@@ -1,0 +1,165 @@
+{{template "layout" .}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-description">Overview of your tunnel activity and usage.</p>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-4" style="margin-bottom: 32px;">
+    <div class="stat-card">
+        <div class="stat-label">Bandwidth Used</div>
+        <div class="stat-value">{{printf "%.2f" .Usage.UsedGB}} GB</div>
+        {{if gt .Usage.LimitGB 0}}
+        <div class="progress-bar">
+            <div class="progress-fill {{if gt .Usage.PercentUsed 90}}danger{{else if gt .Usage.PercentUsed 70}}warning{{end}}"
+                 style="width: {{if gt .Usage.PercentUsed 100}}100{{else}}{{printf "%.0f" .Usage.PercentUsed}}{{end}}%"></div>
+        </div>
+        <div class="stat-change">{{printf "%.0f" .Usage.PercentUsed}}% of {{printf "%.0f" .Usage.LimitGB}} GB limit</div>
+        {{else}}
+        <div class="stat-change positive">Unlimited</div>
+        {{end}}
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Active Domains</div>
+        <div class="stat-value">{{len .Domains}}</div>
+        {{if .Domains}}
+        <div class="stat-change">{{range $i, $d := .Domains}}{{if $i}}, {{end}}{{$d.Name}}{{if gt $i 1}}...{{end}}{{end}}</div>
+        {{else}}
+        <div class="stat-change">No domains configured</div>
+        {{end}}
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Recent Requests</div>
+        <div class="stat-value">{{len .RecentLogs}}</div>
+        <div class="stat-change">Last 24 hours</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Current Plan</div>
+        <div class="stat-value" style="text-transform: capitalize;">{{.User.Plan}}</div>
+        {{if eq .User.Plan "free"}}
+        <a href="/dashboard/account" class="stat-change" style="color: var(--brand-red); text-decoration: underline;">Upgrade</a>
+        {{else}}
+        <div class="stat-change positive">Active</div>
+        {{end}}
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <!-- Recent Requests -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Recent Requests</h2>
+            <a href="/dashboard/logs" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">
+                View All
+                <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            </a>
+        </div>
+
+        {{if .RecentLogs}}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Path</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range $i, $log := .RecentLogs}}
+                    {{if lt $i 5}}
+                    <tr>
+                        <td><span class="method method-{{$log.Method | lower}}">{{$log.Method}}</span></td>
+                        <td><code style="font-size: 0.75rem;">{{$log.Path}}</code></td>
+                        <td>
+                            <span class="status {{if lt $log.StatusCode 300}}status-2xx{{else if lt $log.StatusCode 400}}status-3xx{{else if lt $log.StatusCode 500}}status-4xx{{else}}status-5xx{{end}}">
+                                {{$log.StatusCode}}
+                            </span>
+                        </td>
+                        <td style="color: var(--text-secondary); font-size: 0.875rem;">{{formatDuration $log.Duration}}</td>
+                    </tr>
+                    {{end}}
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+        {{else}}
+        <div class="empty-state">
+            <i data-lucide="inbox"></i>
+            <p>No requests yet</p>
+            <p style="font-size: 0.875rem; margin-top: 8px;">Start a tunnel to see request logs here.</p>
+        </div>
+        {{end}}
+    </div>
+
+    <!-- Domains -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Your Domains</h2>
+            <a href="/dashboard/domains" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">
+                Manage
+                <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            </a>
+        </div>
+
+        {{if .Domains}}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Domain</th>
+                        <th>Status</th>
+                        <th>Added</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Domains}}
+                    <tr>
+                        <td><code>{{.Name}}</code></td>
+                        <td>
+                            {{if .Verified}}
+                            <span class="badge badge-success">Verified</span>
+                            {{else}}
+                            <span class="badge badge-warning">Pending</span>
+                            {{end}}
+                        </td>
+                        <td style="color: var(--text-secondary); font-size: 0.875rem;">{{formatTime .CreatedAt}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+        {{else}}
+        <div class="empty-state">
+            <i data-lucide="globe"></i>
+            <p>No domains configured</p>
+            <p style="font-size: 0.875rem; margin-top: 8px;">Add a custom domain to get started.</p>
+            <a href="/dashboard/domains" class="btn btn-primary" style="margin-top: 16px;">
+                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                Add Domain
+            </a>
+        </div>
+        {{end}}
+    </div>
+</div>
+
+<!-- Quick Start -->
+<div class="card" style="margin-top: 8px;">
+    <div class="card-header">
+        <h2 class="card-title">Quick Start</h2>
+    </div>
+    <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 20px; font-family: var(--font-mono); font-size: 0.875rem;">
+        <div style="color: var(--text-secondary); margin-bottom: 8px;"># Install the CLI</div>
+        <div style="margin-bottom: 16px;">$ <span style="color: var(--success);">go install</span> github.com/lobber-dev/lobber/cmd/lobber@latest</div>
+
+        <div style="color: var(--text-secondary); margin-bottom: 8px;"># Start a tunnel to your local server</div>
+        <div>$ <span style="color: var(--success);">lobber up</span> localhost:3000 {{if .Domains}}--domain={{(index .Domains 0).Name}}{{else}}--domain=myapp.example.com{{end}}</div>
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation | Lobber</title>
+    <link rel="stylesheet" href="docs.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <a href="../landing/index.html" class="logo">
+                <i data-lucide="network" color="#ef4444"></i>
+                Lobber <span style="opacity:0.5; font-weight:400; margin-left:8px;">Docs</span>
+            </a>
+            <div style="display:flex; gap:20px;">
+                <a href="https://github.com/lobber-dev/lobber" style="color:var(--text-secondary); text-decoration:none; display:flex; align-items:center; gap:6px;">
+                    <i data-lucide="github" style="width:18px;"></i> GitHub
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="docs-layout">
+        <aside>
+            <div class="nav-group">
+                <div class="nav-title">Getting Started</div>
+                <a href="#introduction" class="nav-link active">Introduction</a>
+                <a href="#installation" class="nav-link">Installation</a>
+                <a href="#quickstart" class="nav-link">Quickstart</a>
+            </div>
+            
+            <div class="nav-group">
+                <div class="nav-title">Core Concepts</div>
+                <a href="#architecture" class="nav-link">How it Works</a>
+                <a href="#custom-domains" class="nav-link">Custom Domains</a>
+                <a href="#inspector" class="nav-link">Request Inspector</a>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-title">CLI Reference</div>
+                <a href="#cli-up" class="nav-link">lobber up</a>
+                <a href="#cli-login" class="nav-link">lobber login</a>
+                <a href="#cli-config" class="nav-link">Configuration</a>
+            </div>
+        </aside>
+
+        <main>
+            <section id="introduction">
+                <h1>Introduction</h1>
+                <p>
+                    Lobber is a secure tunneling tool that exposes your local development servers to the internet. 
+                    Unlike other tools that use WebSockets, Lobber is built on top of <strong>HTTP/2 binary framing</strong>, 
+                    offering superior performance, lower latency, and better connection stability.
+                </p>
+                <div class="callout">
+                    <div class="callout-title"><i data-lucide="info"></i> Note</div>
+                    <p style="margin-bottom:0;">Lobber is currently in <strong>v1.0 Stable</strong>. While we strive for stability, APIs may change as we add new features.</p>
+                </div>
+            </section>
+
+            <section id="installation">
+                <h2>Installation</h2>
+                <p>Lobber is distributed as a single binary. You can install it via Go, Homebrew (coming soon), or by downloading the binary directly.</p>
+                
+                <h3>Binary Downloads</h3>
+                <p>You can download pre-built binaries for your operating system from the <a href="https://github.com/lobber-dev/lobber/releases" target="_blank" rel="noopener noreferrer">GitHub Releases page</a>.</p>
+                <p>Download the appropriate archive for your system, extract the <code>lobber</code> executable, and place it in your system's PATH.</p>
+
+                <h3>Using Go</h3>
+                <pre><code>go install github.com/lobber-dev/lobber/cmd/lobber@latest</code></pre>
+                
+                <h3>From Source</h3>
+                <pre><code>git clone https://github.com/lobber-dev/lobber.git
+cd lobber
+go build -o lobber ./cmd/lobber</code></pre>
+            </section>
+
+            <section id="quickstart">
+                <h2>Quickstart</h2>
+                <p>Once installed, you can start sharing your local work immediately.</p>
+                
+                <h3>1. Start your local server</h3>
+                <p>Run your web application as you normally would. For example:</p>
+                <pre><code>npm run dev
+# Server running at http://localhost:3000</code></pre>
+
+                <h3>2. Start Lobber</h3>
+                <p>In a new terminal window, tell Lobber where to forward traffic:</p>
+                <pre><code>lobber up localhost:3000</code></pre>
+
+                <p>You'll see a public URL (e.g., <code>https://random-name.lobber.dev</code>) that is now accessible from anywhere.</p>
+            </section>
+
+            <section id="architecture">
+                <h2>How it Works</h2>
+                <p>
+                    Lobber creates a secure, long-lived <strong>TCP connection</strong> to the Lobber Relay Server. 
+                    This connection is upgraded to HTTP/2, allowing us to multiplex multiple requests over a single socket 
+                    without the head-of-line blocking issues found in HTTP/1.1 or the overhead of WebSockets.
+                </p>
+                <ul>
+                    <li><strong>Client (CLI):</strong> Runs on your machine, captures requests from the relay, and forwards them to your localhost.</li>
+                    <li><strong>Relay:</strong> Sits on the public internet, terminates TLS (HTTPS), and routes traffic to the correct connected client.</li>
+                </ul>
+            </section>
+
+            <section id="custom-domains">
+                <h2>Custom Domains</h2>
+                <p>
+                    You can use your own domain names (e.g., <code>dev.mycompany.com</code>) instead of the random subdomains provided by default.
+                </p>
+
+                <h3>1. Configure DNS</h3>
+                <p>Create a <strong>CNAME record</strong> in your DNS provider pointing to our relay server:</p>
+                <pre><code>Type: CNAME
+Name: dev  (or your desired subdomain)
+Value: tunnel.lobber.dev</code></pre>
+
+                <h3>2. Start the tunnel</h3>
+                <p>Pass the <code>--domain</code> flag to the CLI:</p>
+                <pre><code>lobber up localhost:3000 --domain=dev.mycompany.com</code></pre>
+                <p>Lobber will automatically provision a Let's Encrypt SSL certificate for your domain on the first connection.</p>
+            </section>
+
+            <section id="inspector">
+                <h2>Request Inspector</h2>
+                <p>
+                    Lobber includes a built-in web interface to inspect and replay requests. This is invaluable for debugging webhooks.
+                </p>
+                <p>
+                    By default, the inspector runs at <code>http://127.0.0.1:4040</code> when you start a tunnel.
+                </p>
+                <pre><code>lobber up localhost:3000 --inspect=false  # Disable inspector
+lobber up localhost:3000 --inspect-port=8080 # Change port</code></pre>
+            </section>
+
+            <section id="cli-up">
+                <h2>Command: lobber up</h2>
+                <p>Starts a tunnel to a local address.</p>
+                <pre><code>usage: lobber up [address] [flags]</code></pre>
+                
+                <h3>Flags</h3>
+                <ul>
+                    <li><code>--domain string</code>: Custom domain to use (e.g., <code>my.app.com</code>).</li>
+                    <li><code>--token string</code>: Authentication token (overrides config). Useful for CI/CD.</li>
+                    <li><code>--inspect</code>: Enable the web inspector (default <code>true</code>).</li>
+                    <li><code>--inspect-port int</code>: Port for the inspector (default <code>4040</code>).</li>
+                    <li><code>--quiet</code>: Suppress output (useful for scripts).</li>
+                </ul>
+            </section>
+
+            <section id="cli-config">
+                <h2>Configuration</h2>
+                <p>
+                    Lobber stores configuration in <code>~/.lobber/config.yaml</code>. You can edit this file directly or use CLI commands to update it.
+                </p>
+                <pre><code>token: "your-auth-token"
+default_inspect: true</code></pre>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Simple active state highlighting for sidebar
+        const links = document.querySelectorAll('.nav-link');
+        links.forEach(link => {
+            link.addEventListener('click', (e) => {
+                links.forEach(l => l.classList.remove('active'));
+                e.target.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

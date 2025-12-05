@@ -1,0 +1,157 @@
+{{template "layout" .}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1 class="page-title">Account Settings</h1>
+    <p class="page-description">Manage your account and billing preferences.</p>
+</div>
+
+<div class="grid grid-2">
+    <!-- Profile Section -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Profile</h2>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 24px;">
+            {{if .User.AvatarURL}}
+            <img src="{{.User.AvatarURL}}" alt="" style="width: 64px; height: 64px; border-radius: 50%;">
+            {{else}}
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--brand-gradient); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 600;">
+                {{slice .User.Email 0 1 | printf "%s" | html}}
+            </div>
+            {{end}}
+            <div>
+                <div style="font-size: 1.25rem; font-weight: 600;">{{if .User.Name}}{{.User.Name}}{{else}}{{.User.Email}}{{end}}</div>
+                <div style="color: var(--text-secondary);">{{.User.Email}}</div>
+            </div>
+        </div>
+
+        <form>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" value="{{.User.Email}}" disabled>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Display Name</label>
+                <input type="text" class="form-input" value="{{.User.Name}}" placeholder="Enter your name">
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+    </div>
+
+    <!-- Billing Section -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Billing</h2>
+        </div>
+
+        <div style="background: var(--bg-tertiary); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 4px;">Current Plan</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; text-transform: capitalize;">{{.User.Plan}}</div>
+                </div>
+                {{if eq .User.Plan "free"}}
+                <span class="badge badge-info">Free Tier</span>
+                {{else if eq .User.Plan "pro"}}
+                <span class="badge badge-success">Pro</span>
+                {{else}}
+                <span class="badge badge-warning">Pay As You Go</span>
+                {{end}}
+            </div>
+
+            {{if eq .User.Plan "free"}}
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                5 GB bandwidth included per month
+            </div>
+            {{else if eq .User.Plan "pro"}}
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                $15/month - Unlimited bandwidth
+            </div>
+            {{else}}
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                $0.10 per GB - Pay only for what you use
+            </div>
+            {{end}}
+        </div>
+
+        <!-- Usage -->
+        <div style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 0.875rem; color: var(--text-secondary);">Bandwidth Used This Month</span>
+                <span style="font-size: 0.875rem; font-weight: 500;">{{printf "%.2f" .Usage.UsedGB}} GB{{if gt .Usage.LimitGB 0}} / {{printf "%.0f" .Usage.LimitGB}} GB{{end}}</span>
+            </div>
+            {{if gt .Usage.LimitGB 0}}
+            <div class="progress-bar">
+                <div class="progress-fill {{if gt .Usage.PercentUsed 90}}danger{{else if gt .Usage.PercentUsed 70}}warning{{end}}"
+                     style="width: {{if gt .Usage.PercentUsed 100}}100{{else}}{{printf "%.0f" .Usage.PercentUsed}}{{end}}%"></div>
+            </div>
+            {{end}}
+        </div>
+
+        {{if eq .User.Plan "free"}}
+        <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <div style="font-weight: 600; margin-bottom: 8px;">Upgrade to Pro</div>
+            <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 16px;">
+                Get unlimited bandwidth, custom domains, and priority support.
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <a href="#" class="btn btn-primary">
+                    Upgrade - $15/mo
+                </a>
+                <a href="#" class="btn btn-secondary">
+                    Pay As You Go
+                </a>
+            </div>
+        </div>
+        {{else}}
+        <a href="#" class="btn btn-secondary" style="margin-bottom: 12px;">
+            <i data-lucide="credit-card" style="width: 16px; height: 16px;"></i>
+            Manage Billing
+        </a>
+        {{end}}
+    </div>
+</div>
+
+<!-- API Tokens -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">API Tokens</h2>
+        <button class="btn btn-primary" style="padding: 8px 16px; font-size: 0.875rem;">
+            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+            Generate Token
+        </button>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 20px;">
+        API tokens are used to authenticate the CLI with your account. Keep them secret!
+    </p>
+
+    <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 16px; text-align: center; color: var(--text-secondary);">
+        <i data-lucide="key" style="width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+        <p style="font-size: 0.875rem;">No API tokens generated yet.</p>
+        <p style="font-size: 0.75rem; margin-top: 4px;">Generate a token to use with the CLI.</p>
+    </div>
+</div>
+
+<!-- Danger Zone -->
+<div class="card" style="border-color: rgba(239, 68, 68, 0.3);">
+    <div class="card-header">
+        <h2 class="card-title" style="color: var(--error);">Danger Zone</h2>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <div style="font-weight: 500;">Delete Account</div>
+            <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                Permanently delete your account and all associated data.
+            </div>
+        </div>
+        <button class="btn btn-danger">
+            <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+            Delete Account
+        </button>
+    </div>
+</div>
+{{end}}

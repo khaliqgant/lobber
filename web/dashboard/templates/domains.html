@@ -1,0 +1,203 @@
+{{template "layout" .}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1 class="page-title">Domains</h1>
+    <p class="page-description">Manage your custom domains for tunneling.</p>
+</div>
+
+<!-- Add Domain -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Add Domain</h2>
+    </div>
+
+    <form hx-post="/dashboard/domains/add" hx-target="#domains-list" hx-swap="beforeend">
+        <div style="display: flex; gap: 12px; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <label class="form-label">Domain Name</label>
+                <input type="text" name="domain" class="form-input" placeholder="myapp.example.com" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-bottom: 0;">
+                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                Add Domain
+            </button>
+        </div>
+    </form>
+
+    <div style="margin-top: 20px; padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
+        <div style="font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="info" style="width: 16px; height: 16px; color: var(--text-secondary);"></i>
+            DNS Configuration Required
+        </div>
+        <div style="color: var(--text-secondary); font-size: 0.875rem;">
+            To use a custom domain, create a CNAME record pointing to <code>tunnel.lobber.dev</code>
+        </div>
+        <div style="margin-top: 12px; font-family: var(--font-mono); font-size: 0.8rem; background: var(--bg-primary); padding: 12px; border-radius: 6px;">
+            <span style="color: var(--text-secondary);">Type:</span> CNAME<br>
+            <span style="color: var(--text-secondary);">Name:</span> your-subdomain<br>
+            <span style="color: var(--text-secondary);">Value:</span> tunnel.lobber.dev
+        </div>
+    </div>
+</div>
+
+<!-- Domains List -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Your Domains</h2>
+        <span class="htmx-indicator" style="color: var(--text-secondary); font-size: 0.875rem;">
+            <i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></i>
+            Loading...
+        </span>
+    </div>
+
+    <div id="domains-list">
+        {{if .Domains}}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Domain</th>
+                        <th>Status</th>
+                        <th>Added</th>
+                        <th style="width: 100px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Domains}}
+                    <tr id="domain-{{.ID}}">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="globe" style="width: 16px; height: 16px; color: var(--text-secondary);"></i>
+                                <code>{{.Name}}</code>
+                            </div>
+                        </td>
+                        <td>
+                            {{if .Verified}}
+                            <span class="badge badge-success">
+                                <i data-lucide="check-circle" style="width: 12px; height: 12px; margin-right: 4px;"></i>
+                                Verified
+                            </span>
+                            {{else}}
+                            <span class="badge badge-warning">
+                                <i data-lucide="clock" style="width: 12px; height: 12px; margin-right: 4px;"></i>
+                                Pending
+                            </span>
+                            {{end}}
+                        </td>
+                        <td style="color: var(--text-secondary); font-size: 0.875rem;">
+                            {{formatTime .CreatedAt}}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                {{if not .Verified}}
+                                <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.75rem;"
+                                        hx-post="/dashboard/domains/verify/{{.ID}}"
+                                        hx-target="#domain-{{.ID}}"
+                                        hx-swap="outerHTML">
+                                    <i data-lucide="refresh-cw" style="width: 12px; height: 12px;"></i>
+                                    Verify
+                                </button>
+                                {{end}}
+                                <button class="btn btn-danger" style="padding: 6px 10px; font-size: 0.75rem;"
+                                        hx-delete="/dashboard/domains/{{.ID}}"
+                                        hx-target="#domain-{{.ID}}"
+                                        hx-swap="outerHTML"
+                                        hx-confirm="Are you sure you want to delete this domain?">
+                                    <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+        {{else}}
+        <div class="empty-state">
+            <i data-lucide="globe"></i>
+            <p>No domains configured</p>
+            <p style="font-size: 0.875rem; margin-top: 8px;">Add a custom domain above to get started.</p>
+        </div>
+        {{end}}
+    </div>
+</div>
+
+<style>
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+{{end}}
+
+{{define "domains-list.html"}}
+{{if .Domains}}
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Domain</th>
+                <th>Status</th>
+                <th>Added</th>
+                <th style="width: 100px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Domains}}
+            <tr id="domain-{{.ID}}">
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="globe" style="width: 16px; height: 16px; color: var(--text-secondary);"></i>
+                        <code>{{.Name}}</code>
+                    </div>
+                </td>
+                <td>
+                    {{if .Verified}}
+                    <span class="badge badge-success">
+                        <i data-lucide="check-circle" style="width: 12px; height: 12px; margin-right: 4px;"></i>
+                        Verified
+                    </span>
+                    {{else}}
+                    <span class="badge badge-warning">
+                        <i data-lucide="clock" style="width: 12px; height: 12px; margin-right: 4px;"></i>
+                        Pending
+                    </span>
+                    {{end}}
+                </td>
+                <td style="color: var(--text-secondary); font-size: 0.875rem;">
+                    {{formatTime .CreatedAt}}
+                </td>
+                <td>
+                    <div style="display: flex; gap: 8px;">
+                        {{if not .Verified}}
+                        <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.75rem;"
+                                hx-post="/dashboard/domains/verify/{{.ID}}"
+                                hx-target="#domain-{{.ID}}"
+                                hx-swap="outerHTML">
+                            <i data-lucide="refresh-cw" style="width: 12px; height: 12px;"></i>
+                            Verify
+                        </button>
+                        {{end}}
+                        <button class="btn btn-danger" style="padding: 6px 10px; font-size: 0.75rem;"
+                                hx-delete="/dashboard/domains/{{.ID}}"
+                                hx-target="#domain-{{.ID}}"
+                                hx-swap="outerHTML"
+                                hx-confirm="Are you sure you want to delete this domain?">
+                            <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{else}}
+<div class="empty-state">
+    <i data-lucide="globe"></i>
+    <p>No domains configured</p>
+    <p style="font-size: 0.875rem; margin-top: 8px;">Add a custom domain above to get started.</p>
+</div>
+{{end}}
+{{end}}

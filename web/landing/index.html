@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lobber | Expose Localhost to the World</title>
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Animated Grid Background -->
+    <div class="bg-grid"></div>
+
+    <nav>
+        <div class="container">
+            <a href="#" class="logo">
+                <i data-lucide="network" color="#ef4444"></i>
+                Lobber
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#pricing">Pricing</a>
+                <a href="https://github.com/lobber-dev/lobber">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container stagger">
+            <div class="eyebrow animate-entry">
+                <span style="display:inline-block; width:8px; height:8px; background:#4ade80; border-radius:50%; box-shadow: 0 0 10px #4ade80;"></span>
+                v1.0 Stable Release
+            </div>
+            
+            <h1 class="animate-entry">
+                Localhost, meet the <br>
+                <span class="text-gradient">Internet.</span>
+            </h1>
+            
+            <p class="animate-entry">
+                Secure, blazing fast HTTP/2 tunnels for developers.
+                Expose your local server to the world with a single command.
+            </p>
+            
+            <div class="btn-group animate-entry">
+                <a href="#" id="installCliBtn" class="btn btn-primary" data-install-command="go install github.com/lobber-dev/lobber/cmd/lobber@latest">
+                    Install CLI
+                    <i data-lucide="chevron-right" style="width:16px; margin-left:4px;"></i>
+                </a>
+                <a href="../docs/index.html" class="btn btn-secondary">
+                    View Documentation
+                </a>
+            </div>
+
+            <div class="terminal-wrapper animate-entry">
+                <div class="terminal-window">
+                    <div class="terminal-header">
+                        <div class="dot red"></div>
+                        <div class="dot yellow"></div>
+                        <div class="dot green"></div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="cmd-line">
+                            <span class="prompt">➜  ~</span>
+                            <span><span data-tooltip="Start a secure tunnel to local port 3000">lobber up localhost:3000</span> <span data-tooltip="Bind to your custom domain">--domain=my.custom.com</span></span>
+                        </div>
+                        <div style="color: #9ca3af; margin: 8px 0;">
+                            <span style="display:inline-block; width:8px; height:8px; background:#f59e0b; border-radius:50%; box-shadow: 0 0 10px #f59e0b; margin-right: 8px;"></span>
+                            <span data-tooltip="DNS configuration for your custom domain">CNAME <code>my.custom.com</code> to <code>tunnel.lobber.dev</code></span>
+                        </div>
+                        <div style="color: #ef4444; margin: 12px 0;">⠋ Authenticating...</div>
+                        <div style="color: #4ade80;">✔ Authenticated as [user]</div>
+                        <div style="color: #4ade80;">✔ Tunnel established</div>
+                        
+                        <div style="margin-top: 16px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="display:flex; justify-content:space-between;">
+                                <span style="color: #9ca3af;">Public URL</span>
+                                <span style="color: #fff; font-weight: bold;" data-tooltip="Your globally accessible secure URL">https://my.custom.com</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-top: 8px;">
+                                <span style="color: #9ca3af;">Inspector</span>
+                                <span style="color: #fff;">http://127.0.0.1:4040</span>
+                            </div>
+                        </div>
+
+                        <div class="cmd-line" style="margin-top: 16px;">
+                            <span class="prompt">➜  ~</span>
+                            <span class="cursor"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <section id="features" class="features">
+        <div class="container">
+            <div style="text-align:center; margin-bottom: 80px;">
+                <h2 style="font-size: 3rem; margin-bottom: 16px;">Superpowers for your <br><span class="text-gradient">development workflow.</span></h2>
+                <p style="color: var(--text-secondary); font-size: 1.2rem;">Everything you need to debug, demo, and deploy.</p>
+            </div>
+
+            <div class="grid stagger" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 32px;">
+                
+                <div class="card animate-entry">
+                    <div class="card-icon">
+                        <i data-lucide="lock"></i>
+                    </div>
+                    <h3>End-to-End Encrypted</h3>
+                    <p>We provision automatic SSL certificates for every tunnel. Your data is encrypted from your laptop to our edge.</p>
+                </div>
+
+                <div class="card animate-entry">
+                    <div class="card-icon">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <h3>Binary Protocol</h3>
+                    <p>Powered by HTTP/2 binary framing instead of WebSockets. Lower latency, higher throughput, and better stability.</p>
+                </div>
+
+                <div class="card animate-entry">
+                    <div class="card-icon">
+                        <i data-lucide="globe-2"></i>
+                    </div>
+                    <h3>Custom Domains</h3>
+                    <p>Bring your own domain names. Perfect for white-labeling client demos or running production services.</p>
+                </div>
+
+                <div class="card animate-entry">
+                    <div class="card-icon">
+                        <i data-lucide="activity"></i>
+                    </div>
+                    <h3>Request Inspector</h3>
+                    <p>Replay webhooks with a single click. Inspect headers, bodies, and response times in real-time.</p>
+                </div>
+
+                <div class="card animate-entry">
+                    <div class="card-icon">
+                        <i data-lucide="shield"></i>
+                    </div>
+                    <h3>SSO & Team Auth</h3>
+                    <p>Secure your tunnels with Google, GitHub, or Okta SSO. Control who can access your development environments.</p>
+                </div>
+
+                <div class="card animate-entry">
+                    <div class="card-icon">
+                        <i data-lucide="terminal"></i>
+                    </div>
+                    <h3>CLI First</h3>
+                    <p>Designed for the terminal. Pipe logs, script commands, and integrate with your existing CI/CD pipeline.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" style="padding: 100px 0;">
+        <div class="container">
+            <div style="text-align:center; margin-bottom: 80px;">
+                <h2 style="font-size: 3rem; margin-bottom: 16px;">Simple, transparent <br><span class="text-gradient">pricing.</span></h2>
+                <p style="color: var(--text-secondary); font-size: 1.2rem;">Start for free, upgrade when you need more power.</p>
+            </div>
+
+            <div class="grid stagger" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px;">
+                <!-- Starter Plan -->
+                <div class="card animate-entry" style="display:flex; flex-direction:column;">
+                    <h3 style="margin-bottom: 8px;">Starter</h3>
+                    <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 24px;">$0<span style="font-size: 1rem; color: var(--text-secondary); font-weight: 400;">/mo</span></div>
+                    <ul style="list-style: none; margin-bottom: 32px; flex-grow: 1;">
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> 1 Tunnel
+                        </li>
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> Random Subdomains
+                        </li>
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> 40 Connections / min
+                        </li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary" style="width:100%;">Get Started</a>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="card animate-entry" style="display:flex; flex-direction:column; border-color: #ef4444; background: rgba(239, 68, 68, 0.05);">
+                    <div style="position:absolute; top:0; right:0; background:#ef4444; color:#fff; font-size:0.75rem; font-weight:bold; padding:4px 12px; border-bottom-left-radius:12px;">POPULAR</div>
+                    <h3 style="margin-bottom: 8px;">Pro</h3>
+                    <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 24px;">$15<span style="font-size: 1rem; color: var(--text-secondary); font-weight: 400;">/mo</span></div>
+                    <ul style="list-style: none; margin-bottom: 32px; flex-grow: 1;">
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> 10 Tunnels
+                        </li>
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> Custom Domains
+                        </li>
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> Reserved Subdomains
+                        </li>
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> Priority Support
+                        </li>
+                    </ul>
+                    <a href="#" class="btn btn-primary" style="width:100%;">Start Free Trial</a>
+                </div>
+
+                <!-- Team Plan -->
+                <div class="card animate-entry" style="display:flex; flex-direction:column;">
+                    <h3 style="margin-bottom: 8px;">Team</h3>
+                    <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 24px;">$49<span style="font-size: 1rem; color: var(--text-secondary); font-weight: 400;">/mo</span></div>
+                    <ul style="list-style: none; margin-bottom: 32px; flex-grow: 1;">
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> Unlimited Tunnels
+                        </li>
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> SSO & Team Management
+                        </li>
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> Audit Logs
+                        </li>
+                        <li style="margin-bottom: 12px; display:flex; align-items:center; gap: 8px; color: var(--text-secondary);">
+                            <i data-lucide="check" style="width:16px; color:#4ade80;"></i> 99.9% SLA
+                        </li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary" style="width:100%;">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="border-top: 1px solid var(--border-color); padding: 80px 0; background: #000;">
+        <div class="container" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <a href="#" class="logo" style="margin-bottom: 16px; display:inline-flex;">
+                    <i data-lucide="network"></i> Lobber
+                </a>
+                <p style="color: var(--text-secondary);">The developer tunnel for pros.</p>
+            </div>
+            <div style="display:flex; gap: 24px;">
+                <a href="https://github.com/lobber-dev/lobber" style="color: var(--text-secondary);">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+        
+        // Add simple scroll reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                    entry.target.style.opacity = 1;
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.animate-entry').forEach(el => observer.observe(el));
+
+        const installCliBtn = document.getElementById('installCliBtn');
+        if (installCliBtn) {
+            installCliBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const command = installCliBtn.getAttribute('data-install-command');
+                try {
+                    await navigator.clipboard.writeText(command);
+                    const originalText = installCliBtn.innerHTML;
+                    installCliBtn.innerHTML = 'Copied! <i data-lucide="check" style="width:16px; margin-left:4px;"></i>';
+                    lucide.createIcons(); // Re-render lucide icon
+                    setTimeout(() => {
+                        installCliBtn.innerHTML = originalText;
+                        lucide.createIcons(); // Re-render lucide icon
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy: ', err);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

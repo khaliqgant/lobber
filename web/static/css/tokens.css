@@ -1,0 +1,40 @@
+:root {
+  /* Colors */
+  --bg-primary: #030305; /* Deep, deep black/blue */
+  --bg-secondary: #0f0f13;
+  --bg-tertiary: #1a1a1f;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #9ca3af;
+  
+  /* Brand */
+  --brand-red: #ef4444;
+  --brand-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+  --brand-glow: conic-gradient(from 180deg at 50% 50%, #ef4444 0deg, #dc2626 180deg, #b91c1c 360deg);
+  
+  /* UI Elements */
+  --border-color: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  
+  /* Status Colors */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+
+  /* Status Backgrounds (Dim) */
+  --bg-success-dim: rgba(16, 185, 129, 0.1);
+  --bg-warning-dim: rgba(245, 158, 11, 0.1);
+  --bg-error-dim: rgba(239, 68, 68, 0.1);
+  --bg-info-dim: rgba(59, 130, 246, 0.1);
+  --bg-brand-red-dim: rgba(239, 68, 68, 0.1);
+  
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Spacing */
+  --container-width: 1200px;
+  --header-height: 80px;
+}

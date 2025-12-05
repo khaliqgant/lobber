@@ -1,0 +1,225 @@
+{{template "layout" .}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1 class="page-title">Request Logs</h1>
+    <p class="page-description">Monitor requests passing through your tunnels.</p>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding: 16px;">
+    <form style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+        <div class="form-group" style="margin-bottom: 0; min-width: 200px;">
+            <label class="form-label">Domain</label>
+            <select class="form-input" name="domain">
+                <option value="">All Domains</option>
+                {{range .Domains}}
+                <option value="{{.ID}}">{{.Name}}</option>
+                {{end}}
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0; min-width: 120px;">
+            <label class="form-label">Method</label>
+            <select class="form-input" name="method">
+                <option value="">All Methods</option>
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="DELETE">DELETE</option>
+                <option value="PATCH">PATCH</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0; min-width: 120px;">
+            <label class="form-label">Status</label>
+            <select class="form-input" name="status">
+                <option value="">All Status</option>
+                <option value="2xx">2xx Success</option>
+                <option value="3xx">3xx Redirect</option>
+                <option value="4xx">4xx Client Error</option>
+                <option value="5xx">5xx Server Error</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-secondary"
+                hx-get="/dashboard/logs"
+                hx-target="#logs-table"
+                hx-swap="innerHTML"
+                hx-include="[name='domain'],[name='method'],[name='status']">
+            <i data-lucide="filter" style="width: 16px; height: 16px;"></i>
+            Apply Filters
+        </button>
+        <button type="button" class="btn btn-secondary"
+                hx-get="/dashboard/logs"
+                hx-target="#logs-table"
+                hx-swap="innerHTML"
+                hx-trigger="click"
+                hx-indicator=".htmx-indicator">
+            <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
+            Refresh
+        </button>
+    </form>
+</div>
+
+<!-- Logs Table -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Recent Requests</h2>
+        <span class="htmx-indicator" style="color: var(--text-secondary); font-size: 0.875rem;">
+            <i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></i>
+            Loading...
+        </span>
+    </div>
+
+    <div id="logs-table">
+        {{if .Logs}}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Method</th>
+                        <th>Path</th>
+                        <th style="width: 100px;">Domain</th>
+                        <th style="width: 80px;">Status</th>
+                        <th style="width: 80px;">Duration</th>
+                        <th style="width: 150px;">Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Logs}}
+                    <tr>
+                        <td>
+                            <span class="method method-{{.Method | lower}}">{{.Method}}</span>
+                        </td>
+                        <td>
+                            <code style="font-size: 0.8rem; word-break: break-all;">{{.Path}}</code>
+                        </td>
+                        <td style="font-size: 0.875rem; color: var(--text-secondary);">
+                            {{.Domain}}
+                        </td>
+                        <td>
+                            <span class="status {{if lt .StatusCode 300}}status-2xx{{else if lt .StatusCode 400}}status-3xx{{else if lt .StatusCode 500}}status-4xx{{else}}status-5xx{{end}}">
+                                {{.StatusCode}}
+                            </span>
+                        </td>
+                        <td style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">
+                            {{formatDuration .Duration}}
+                        </td>
+                        <td style="font-size: 0.8rem; color: var(--text-secondary);">
+                            {{formatTime .CreatedAt}}
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+            <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                Showing {{len .Logs}} requests
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" style="padding: 6px 12px;" disabled>
+                    <i data-lucide="chevron-left" style="width: 14px; height: 14px;"></i>
+                    Previous
+                </button>
+                <button class="btn btn-secondary" style="padding: 6px 12px;"
+                        hx-get="/dashboard/logs?offset=100"
+                        hx-target="#logs-table"
+                        hx-swap="innerHTML">
+                    Next
+                    <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+                </button>
+            </div>
+        </div>
+        {{else}}
+        <div class="empty-state">
+            <i data-lucide="inbox"></i>
+            <p>No requests logged</p>
+            <p style="font-size: 0.875rem; margin-top: 8px;">Requests will appear here once you start a tunnel.</p>
+        </div>
+        {{end}}
+    </div>
+</div>
+
+<!-- Live Updates Info -->
+<div style="text-align: center; color: var(--text-secondary); font-size: 0.875rem; margin-top: 16px;">
+    <i data-lucide="info" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+    For real-time request inspection, use the local inspector at <code>http://127.0.0.1:4040</code>
+</div>
+
+<style>
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+{{end}}
+
+{{define "logs-list.html"}}
+{{if .Logs}}
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 80px;">Method</th>
+                <th>Path</th>
+                <th style="width: 100px;">Domain</th>
+                <th style="width: 80px;">Status</th>
+                <th style="width: 80px;">Duration</th>
+                <th style="width: 150px;">Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Logs}}
+            <tr>
+                <td>
+                    <span class="method method-{{.Method | lower}}">{{.Method}}</span>
+                </td>
+                <td>
+                    <code style="font-size: 0.8rem; word-break: break-all;">{{.Path}}</code>
+                </td>
+                <td style="font-size: 0.875rem; color: var(--text-secondary);">
+                    {{.Domain}}
+                </td>
+                <td>
+                    <span class="status {{if lt .StatusCode 300}}status-2xx{{else if lt .StatusCode 400}}status-3xx{{else if lt .StatusCode 500}}status-4xx{{else}}status-5xx{{end}}">
+                        {{.StatusCode}}
+                    </span>
+                </td>
+                <td style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">
+                    {{formatDuration .Duration}}
+                </td>
+                <td style="font-size: 0.8rem; color: var(--text-secondary);">
+                    {{formatTime .CreatedAt}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+    <div style="color: var(--text-secondary); font-size: 0.875rem;">
+        Showing {{len .Logs}} requests
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary" style="padding: 6px 12px;" disabled>
+            <i data-lucide="chevron-left" style="width: 14px; height: 14px;"></i>
+            Previous
+        </button>
+        <button class="btn btn-secondary" style="padding: 6px 12px;"
+                hx-get="/dashboard/logs?offset=100"
+                hx-target="#logs-table"
+                hx-swap="innerHTML">
+            Next
+            <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+        </button>
+    </div>
+</div>
+{{else}}
+<div class="empty-state">
+    <i data-lucide="inbox"></i>
+    <p>No requests logged</p>
+    <p style="font-size: 0.875rem; margin-top: 8px;">Requests will appear here once you start a tunnel.</p>
+</div>
+{{end}}
+{{end}}
