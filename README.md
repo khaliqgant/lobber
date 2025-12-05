@@ -31,6 +31,14 @@ lobber logs                       # Tail request logs
 - **Request inspector** - Debug webhooks at `localhost:4040`
 - **Webhook replay** - Re-send failed requests with one click
 
+## Pricing
+
+**Free** - 2GB/month, custom domains, request inspector (2x more than ngrok)
+
+**Pay-as-you-go** - $0.10/GB after free tier
+
+**Pro ($15/month)** - 50GB included, 30-day logs, webhook replay, uptime monitoring
+
 ## Development
 
 ```bash
