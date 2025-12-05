@@ -33,14 +33,21 @@ func run() error {
 	}
 	defer database.Close()
 
-	// Create server
-	server := relay.NewServer(database)
+	// Create server config with Stripe settings
+	config := relay.DefaultServerConfig()
+	config.StripeAPIKey = os.Getenv("STRIPE_API_KEY")
+	config.StripeWebhookKey = os.Getenv("STRIPE_WEBHOOK_SECRET")
 
 	// Set up TLS
 	serviceDomain := os.Getenv("SERVICE_DOMAIN")
 	if serviceDomain == "" {
-		serviceDomain = "tunnel.lobber.dev"
+		serviceDomain = "lobber.dev"
 	}
+
+	config.BaseDomain = serviceDomain
+
+	// Create server
+	server := relay.NewServerWithConfig(database, config)
 
 	cacheDir := os.Getenv("CERT_CACHE_DIR")
 	if cacheDir == "" {

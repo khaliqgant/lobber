@@ -15,6 +15,7 @@ import (
 	"github.com/lobber-dev/lobber/internal/billing"
 	"github.com/lobber-dev/lobber/internal/db"
 	"github.com/lobber-dev/lobber/internal/tunnel"
+	"github.com/lobber-dev/lobber/web/dashboard"
 )
 
 // TokenValidator validates a token and returns (userID, valid)
@@ -30,12 +31,12 @@ const (
 )
 
 // ServerConfig holds configurable parameters for the relay server
-// ServerConfig holds configurable parameters for the relay server
 type ServerConfig struct {
 	MaxPendingQueue   int           // Max requests to queue before tunnel ready (default 100)
 	PendingQueueTTL   time.Duration // Max time a request can wait in queue (default 5s)
 	StripeAPIKey      string        // Stripe API key for billing
 	StripeWebhookKey  string        // Stripe webhook signing secret
+	BaseDomain        string        // Base domain for the application (e.g., lobber.dev)
 }
 
 // DefaultServerConfig returns sensible defaults
@@ -47,12 +48,17 @@ func DefaultServerConfig() *ServerConfig {
 }
 
 type Server struct {
-	db             *db.DB
-	mu             sync.RWMutex
-	tunnels        map[string]*Tunnel // hostname -> tunnel
-	mux            *http.ServeMux
-	tokenValidator TokenValidator
-	config         *ServerConfig
+	db               *db.DB
+	mu               sync.RWMutex
+	tunnels          map[string]*Tunnel // hostname -> tunnel
+	mux              *http.ServeMux
+	tokenValidator   TokenValidator
+	config           *ServerConfig
+	billingService   *billing.Service
+	webhookHandler   *billing.WebhookHandler
+	dashboardHandler *dashboard.Handler
+	landingHandler   http.Handler
+	staticHandler    http.Handler
 }
 
 // pendingRequest holds a request waiting for tunnel to become ready
@@ -99,22 +105,78 @@ func NewServerWithConfig(database *db.DB, config *ServerConfig) *Server {
 		config = DefaultServerConfig()
 	}
 	s := &Server{
-		db:      database,
-		tunnels: make(map[string]*Tunnel),
-		mux:     http.NewServeMux(),
-		config:  config,
+		db:             database,
+		tunnels:        make(map[string]*Tunnel),
+		mux:            http.NewServeMux(),
+		config:         config,
+		landingHandler: http.FileServer(http.Dir("web/landing")),
+		staticHandler:  http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))),
+	}
+
+	// Initialize billing service if Stripe API key is configured
+	if config.StripeAPIKey != "" && database != nil {
+		s.billingService = billing.NewService(database.DB, config.StripeAPIKey)
+		if config.StripeWebhookKey != "" {
+			s.webhookHandler = billing.NewWebhookHandler(database.DB, config.StripeWebhookKey, s.billingService)
+			s.mux.HandleFunc("/stripe/webhook", s.webhookHandler.HandleWebhook)
+		}
 	}
 
 	s.mux.HandleFunc("/health", s.handleHealth)
 	s.mux.HandleFunc("/_lobber/connect", s.handleConnect)
+
+	// Initialize dashboard if database is available
+	if database != nil {
+		dashHandler, err := dashboard.NewHandler(database.DB)
+		if err == nil {
+			s.dashboardHandler = dashHandler
+		}
+	}
 
 	return s
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Check if this is an internal route
-	if r.URL.Path == "/health" || r.URL.Path == "/_lobber/connect" {
+	if r.URL.Path == "/health" || r.URL.Path == "/_lobber/connect" || r.URL.Path == "/stripe/webhook" {
 		s.mux.ServeHTTP(w, r)
+		return
+	}
+
+	// Serve static files
+	if strings.HasPrefix(r.URL.Path, "/static/") {
+		s.staticHandler.ServeHTTP(w, r)
+		return
+	}
+
+	// Route dashboard requests
+	if strings.HasPrefix(r.URL.Path, "/dashboard") && s.dashboardHandler != nil {
+		s.dashboardHandler.ServeHTTP(w, r)
+		return
+	}
+
+	// Check if this is the main domain (not a tunnel subdomain)
+	// Only serve landing pages if BaseDomain is configured and matches,
+	// or if we're on localhost for local development
+	host := r.Host
+	if idx := strings.Index(host, ":"); idx != -1 {
+		host = host[:idx] // strip port
+	}
+	isMainDomain := (s.config.BaseDomain != "" && host == s.config.BaseDomain) || host == "localhost"
+
+	if isMainDomain {
+		// Serve landing page for explicit routes
+		if r.URL.Path == "/" || r.URL.Path == "/index.html" ||
+			r.URL.Path == "/about" || r.URL.Path == "/pricing" {
+			http.ServeFile(w, r, "web/landing/index.html")
+			return
+		}
+		if r.URL.Path == "/styles.css" {
+			http.ServeFile(w, r, "web/landing/styles.css")
+			return
+		}
+		// Main domain but no route matched - return 404
+		http.NotFound(w, r)
 		return
 	}
 

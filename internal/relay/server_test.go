@@ -37,6 +37,8 @@ func TestServerRejectUnknownDomain(t *testing.T) {
 
 	s.ServeHTTP(rec, req)
 
+	// Unknown domains should go to proxy logic and return 502 if tunnel not found.
+	// They should NOT fall back to landing page.
 	if rec.Code != http.StatusBadGateway {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusBadGateway)
 	}
