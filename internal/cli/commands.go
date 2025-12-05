@@ -50,7 +50,7 @@ Flags:
 
 Examples:
   lobber login
-  lobber up app.mysite.com:3000
+  lobber up app.mysite.com:3000 --domain my.custom.com
   lobber up app.mysite.com:3000 --inspect`)
 	return nil
 }
@@ -79,6 +79,7 @@ func runUp(args []string) error {
 	inspectPort := fs.Int("inspect-port", 4040, "Inspector port")
 	noInspect := fs.Bool("no-inspect", false, "Disable local inspector")
 	quiet := fs.Bool("quiet", false, "Minimal output")
+	domain := fs.String("domain", "", "Custom domain to use")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -94,6 +95,7 @@ func runUp(args []string) error {
 	_ = inspectPort
 	_ = noInspect
 	_ = quiet
+	_ = domain
 
 	fmt.Printf("Starting tunnel for %s...\n", target)
 	// TODO: Implement tunnel

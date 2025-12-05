@@ -81,6 +81,9 @@ type Tunnel struct {
 	// Context for cancellation
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	// Cleanup callback (set by server to unregister tunnel)
+	onClose func()
 }
 
 func NewServer(database *db.DB) *Server {
@@ -186,6 +189,11 @@ func (s *Server) handleConnect(w http.ResponseWriter, r *http.Request) {
 		cancel:       cancel,
 	}
 
+	// Set cleanup callback to unregister from server
+	t.onClose = func() {
+		s.UnregisterTunnel(domain)
+	}
+
 	// Register tunnel (even before ready, so requests can queue)
 	s.RegisterTunnel(t)
 
@@ -194,7 +202,6 @@ func (s *Server) handleConnect(w http.ResponseWriter, r *http.Request) {
 		// First wait for ready frame
 		if err := t.waitForReady(); err != nil {
 			t.Close()
-			s.UnregisterTunnel(domain)
 			return
 		}
 
@@ -483,6 +490,11 @@ func (t *Tunnel) Close() {
 	}
 	t.pendingQueue = nil
 	t.queueMu.Unlock()
+
+	// Unregister from server
+	if t.onClose != nil {
+		t.onClose()
+	}
 }
 
 // GetState returns the current tunnel state
