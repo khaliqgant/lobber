@@ -1,0 +1,131 @@
+version: '3.8'
+
+# Lobber Local Development Environment
+# Usage: docker-compose -f docker-compose.dev.yml up --build
+#
+# This starts:
+#   - PostgreSQL database (port 5432)
+#   - Relay server in dev mode (port 8080)
+#   - Sample echo app for testing tunnels (port 3000)
+#   - Stripe CLI for webhook forwarding (optional)
+#
+# Test the tunnel:
+#   1. Build CLI: go build -o lobber ./cmd/lobber
+#   2. Connect: ./lobber up myapp.localhost:3000 --relay http://localhost:8080
+#   3. Access: curl -H "Host: myapp.localhost" http://localhost:8080/
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: lobber-postgres
+    environment:
+      POSTGRES_USER: lobber
+      POSTGRES_PASSWORD: lobber
+      POSTGRES_DB: lobber
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./internal/db/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lobber"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lobber-net
+
+  # Relay Server (HTTP-only dev mode)
+  relay:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.relay
+    container_name: lobber-relay
+    environment:
+      DATABASE_URL: postgres://lobber:lobber@postgres:5432/lobber?sslmode=disable
+      SERVICE_DOMAIN: localhost
+      DEV_MODE: "true"
+      HTTP_ADDR: ":8080"
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./web:/app/web:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - lobber-net
+
+  # Sample Echo App (for testing tunnels)
+  echo-app:
+    image: hashicorp/http-echo
+    container_name: lobber-echo
+    command: ["-text=Hello from Lobber tunnel!"]
+    ports:
+      - "3000:5678"
+    networks:
+      - lobber-net
+
+  # Sample Python App (alternative test target)
+  python-app:
+    image: python:3.12-alpine
+    container_name: lobber-python
+    command:
+      - python
+      - -c
+      - |
+        from http.server import HTTPServer, BaseHTTPRequestHandler
+        import json
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.send_header("X-Lobber-Test", "success")
+                self.end_headers()
+                response = {"message": "Hello from Python app!", "path": self.path}
+                self.wfile.write(json.dumps(response).encode() + b"\n")
+
+            def log_message(self, format, *args):
+                print(f"[Python App] {args[0]}")
+
+        print("Python app listening on :8000")
+        HTTPServer(("0.0.0.0", 8000), Handler).serve_forever()
+    ports:
+      - "3001:8000"
+    networks:
+      - lobber-net
+
+  # Stripe CLI (for webhook testing) - optional
+  # Uncomment to enable webhook forwarding
+  # stripe-cli:
+  #   image: stripe/stripe-cli
+  #   container_name: lobber-stripe
+  #   command: listen --forward-to http://relay:8080/stripe/webhook
+  #   environment:
+  #     STRIPE_API_KEY: ${STRIPE_API_KEY}
+  #   depends_on:
+  #     - relay
+  #   networks:
+  #     - lobber-net
+
+  # Adminer (Database UI) - optional
+  adminer:
+    image: adminer
+    container_name: lobber-adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    networks:
+      - lobber-net
+
+networks:
+  lobber-net:
+    driver: bridge
+
+volumes:
+  postgres_data:

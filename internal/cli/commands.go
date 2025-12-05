@@ -1,8 +1,15 @@
 package cli
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+
+	"github.com/lobber-dev/lobber/internal/client"
 )
 
 func Run(args []string) error {
@@ -75,6 +82,7 @@ func runLogout(args []string) error {
 func runUp(args []string) error {
 	fs := flag.NewFlagSet("up", flag.ExitOnError)
 	token := fs.String("token", "", "API token (for CI/CD)")
+	relay := fs.String("relay", "https://lobber.dev", "Relay server URL")
 	inspect := fs.Bool("inspect", true, "Enable local inspector")
 	inspectPort := fs.Int("inspect-port", 4040, "Inspector port")
 	noInspect := fs.Bool("no-inspect", false, "Disable local inspector")
@@ -86,19 +94,89 @@ func runUp(args []string) error {
 	}
 
 	if fs.NArg() < 1 {
-		return fmt.Errorf("usage: lobber up <domain>:<port>")
+		return fmt.Errorf("usage: lobber up <domain>:<port> [--relay URL]")
 	}
 
 	target := fs.Arg(0)
-	_ = token
 	_ = inspect
 	_ = inspectPort
 	_ = noInspect
-	_ = quiet
-	_ = domain
 
-	fmt.Printf("Starting tunnel for %s...\n", target)
-	// TODO: Implement tunnel
+	// Parse target (domain:port or just port)
+	var tunnelDomain string
+	var localPort string
+
+	if strings.Contains(target, ":") {
+		parts := strings.SplitN(target, ":", 2)
+		tunnelDomain = parts[0]
+		localPort = parts[1]
+	} else {
+		localPort = target
+		tunnelDomain = "tunnel.lobber.dev" // default
+	}
+
+	// Override domain if specified
+	if *domain != "" {
+		tunnelDomain = *domain
+	}
+
+	// Build local address
+	localAddr := fmt.Sprintf("http://localhost:%s", localPort)
+
+	// Get token from flag or config
+	authToken := *token
+	if authToken == "" {
+		cfg, err := LoadConfig()
+		if err == nil && cfg.Token != "" {
+			authToken = cfg.Token
+		} else {
+			// Use a default dev token for local testing
+			authToken = "dev-token"
+		}
+	}
+
+	if !*quiet {
+		fmt.Printf("Starting tunnel...\n")
+		fmt.Printf("  Local:  %s\n", localAddr)
+		fmt.Printf("  Domain: %s\n", tunnelDomain)
+		fmt.Printf("  Relay:  %s\n", *relay)
+		fmt.Println()
+	}
+
+	// Create client
+	c := client.New(localAddr, *relay, authToken, tunnelDomain)
+
+	// Set up signal handling for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigCh
+		if !*quiet {
+			fmt.Println("\nShutting down tunnel...")
+		}
+		cancel()
+	}()
+
+	// Set ready callback
+	c.SetOnReady(func() {
+		if !*quiet {
+			fmt.Printf("Tunnel ready! Forwarding %s -> %s\n", tunnelDomain, localAddr)
+			fmt.Println("Press Ctrl+C to stop")
+		}
+	})
+
+	// Run the tunnel (blocks until cancelled or error)
+	if err := c.Run(ctx); err != nil {
+		if err == context.Canceled {
+			return nil // Normal shutdown
+		}
+		return fmt.Errorf("tunnel error: %w", err)
+	}
+
 	return nil
 }
 

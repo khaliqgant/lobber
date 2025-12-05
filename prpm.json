@@ -1,0 +1,23 @@
+{
+  "name": "creating-landing-pages",
+  "version": "1.0.0",
+  "description": "Systematic workflow for building marketing landing pages and SaaS homepages with hero-first design, animation patterns, social proof, and section expansion",
+  "author": "Khaliq Gant",
+  "license": "MIT",
+  "repository": "https://github.com/khaliqgant/lobber",
+  "organization": "lobber",
+  "format": "claude",
+  "subtype": "skill",
+  "tags": [
+    "landing-page",
+    "marketing",
+    "saas",
+    "web-design",
+    "frontend",
+    "animations",
+    "hero-section"
+  ],
+  "files": [
+    ".claude/skills/creating-landing-pages/SKILL.md"
+  ]
+}

@@ -541,10 +541,52 @@ DATABASE_URL="postgres://lobber:lobber@localhost:5432/lobber?sslmode=disable" ./
 
 ---
 
+## Session Log
+
+### 2025-12-05: Day 2 Implementation (ImplementerAgent)
+
+**Status: Priority 1-3 COMPLETE, ready for commit**
+
+#### Completed Tasks:
+
+**Priority 1: Core Tunnel Functionality ✅**
+- HTTP/2 Tunnel Handshake - Connection hijacking approach (not WebSocket)
+- Request Multiplexing - Uses existing binary framing protocol
+- End-to-End Integration Test - `integration_test.go`
+
+**Priority 2: Authentication ✅**
+- API Token Generation - `lb_` prefix + 64 hex chars, bcrypt hashed
+- Token Validation - Server requires Bearer token, configurable validator
+
+**Priority 3: Domain Verification ✅**
+- CNAME Verification - Checks domain points to `tunnel.lobber.dev`
+
+#### Files Created:
+- `internal/auth/token.go` - Token generation/validation
+- `internal/auth/token_test.go` - Token tests
+- `internal/relay/domain.go` - CNAME verification
+- `internal/relay/domain_test.go` - CNAME tests
+- `internal/relay/auth_test.go` - Auth integration tests
+- `integration_test.go` - End-to-end tunnel tests
+
+#### Files Modified:
+- `internal/relay/server.go` - Added tunnel connection handling, auth validation, HasTunnel()
+- `internal/client/client.go` - Implemented Connect() and Run() with request forwarding
+
+#### Test Results:
+All 16 tests passing (`go test ./...`)
+
+#### Not Started:
+- Priority 4: Billing (Stripe)
+- Priority 5: Web Dashboard
+- Agent-mail MCP tools were unavailable
+
+---
+
 ## Resume Instructions
 
 1. Read this file for full context
 2. Read `docs/plans/2025-12-04-lobber-design.md` for product vision
 3. Check agent-mail inbox if available: `mcp__mcp-agent-mail__fetch_inbox`
-4. Start with Priority 1: HTTP/2 tunnel connection
+4. **NEXT:** Commit the Day 2 work, then continue with Priority 4 (Stripe billing)
 5. Use TDD: write test first, verify fail, implement, verify pass, commit

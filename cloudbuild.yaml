@@ -1,0 +1,69 @@
+# Cloud Build configuration for Lobber
+# Triggered on push to main branch
+
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/lobber-relay:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/lobber-relay:latest'
+      - '-f'
+      - 'docker/Dockerfile.relay'
+      - '.'
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/lobber-relay:$COMMIT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/lobber-relay:latest'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'lobber-relay'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/lobber-relay:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+      - '--timeout'
+      - '3600'
+      - '--cpu'
+      - '2'
+      - '--memory'
+      - '1Gi'
+      - '--min-instances'
+      - '1'
+      - '--max-instances'
+      - '10'
+      - '--concurrency'
+      - '250'
+      - '--set-env-vars'
+      - 'DEV_MODE=true,HTTP_ADDR=:8080,SERVICE_DOMAIN=lobber.dev'
+      - '--set-secrets'
+      - 'DATABASE_URL=lobber-database-url:latest,STRIPE_API_KEY=lobber-stripe-key:latest,STRIPE_WEBHOOK_SECRET=lobber-stripe-webhook:latest'
+
+substitutions:
+  _REGION: us-central1
+
+images:
+  - 'gcr.io/$PROJECT_ID/lobber-relay:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/lobber-relay:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

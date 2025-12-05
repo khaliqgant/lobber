@@ -26,6 +26,9 @@ func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
+	// Check for dev mode (HTTP only, no TLS)
+	devMode := os.Getenv("DEV_MODE") == "true"
+
 	// Connect to database
 	database, err := db.New(ctx)
 	if err != nil {
@@ -40,7 +43,7 @@ func run() error {
 	config.StripeAPIKey = os.Getenv("STRIPE_API_KEY")
 	config.StripeWebhookKey = os.Getenv("STRIPE_WEBHOOK_SECRET")
 
-	// Set up TLS
+	// Set up domain
 	serviceDomain := os.Getenv("SERVICE_DOMAIN")
 	if serviceDomain == "" {
 		serviceDomain = "lobber.dev"
@@ -51,18 +54,56 @@ func run() error {
 	// Create server
 	server := relay.NewServerWithConfig(database, config)
 
+	// HTTP server address
+	httpAddr := os.Getenv("HTTP_ADDR")
+	if httpAddr == "" {
+		httpAddr = ":80"
+	}
+
+	errCh := make(chan error, 2)
+
+	if devMode {
+		// Dev mode: HTTP only, no TLS
+		log.Println("Running in DEV_MODE (HTTP only, no TLS)")
+
+		httpServer := &http.Server{
+			Addr:    httpAddr,
+			Handler: server,
+		}
+
+		go func() {
+			log.Printf("HTTP server listening on %s", httpAddr)
+			if err := httpServer.ListenAndServe(); err != http.ErrServerClosed {
+				errCh <- fmt.Errorf("http: %w", err)
+			}
+		}()
+
+		// Wait for shutdown
+		select {
+		case <-ctx.Done():
+			log.Println("Shutting down...")
+		case err := <-errCh:
+			return err
+		}
+
+		// Graceful shutdown
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer shutdownCancel()
+
+		if err := httpServer.Shutdown(shutdownCtx); err != nil {
+			log.Printf("HTTP shutdown error: %v", err)
+		}
+
+		return nil
+	}
+
+	// Production mode: TLS enabled
 	cacheDir := os.Getenv("CERT_CACHE_DIR")
 	if cacheDir == "" {
 		cacheDir = "/var/cache/lobber/certs"
 	}
 
 	tlsMgr := relay.NewTLSManager(serviceDomain, cacheDir)
-
-	// HTTP server for ACME challenges
-	httpAddr := os.Getenv("HTTP_ADDR")
-	if httpAddr == "" {
-		httpAddr = ":80"
-	}
 
 	httpServer := &http.Server{
 		Addr:    httpAddr,
@@ -85,8 +126,6 @@ func run() error {
 	}
 
 	// Start servers
-	errCh := make(chan error, 2)
-
 	go func() {
 		log.Printf("HTTP server listening on %s", httpAddr)
 		if err := httpServer.ListenAndServe(); err != http.ErrServerClosed {

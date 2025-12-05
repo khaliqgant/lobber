@@ -9,7 +9,13 @@ RUN CGO_ENABLED=0 go build -o /relay ./cmd/relay
 
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates
+
+# Copy binary
 COPY --from=builder /relay /usr/local/bin/relay
 
-EXPOSE 80 443
+# Copy web assets (landing page, dashboard templates, static files)
+COPY --from=builder /app/web /app/web
+
+WORKDIR /app
+EXPOSE 80 443 8080
 ENTRYPOINT ["relay"]

@@ -1,0 +1,64 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: lobber-relay
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/launch-stage: BETA
+spec:
+  template:
+    metadata:
+      annotations:
+        # Allow up to 60 min for tunnel connections
+        run.googleapis.com/request-timeout: "3600s"
+        # Keep instances warm for better tunnel performance
+        run.googleapis.com/min-instances: "1"
+        # Scale based on concurrent connections
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      containerConcurrency: 250
+      timeoutSeconds: 3600
+      containers:
+        - image: gcr.io/PROJECT_ID/lobber-relay:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DEV_MODE
+              value: "true"  # Cloud Run handles TLS
+            - name: HTTP_ADDR
+              value: ":8080"
+            - name: SERVICE_DOMAIN
+              value: "lobber.dev"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: lobber-secrets
+                  key: database_url
+            - name: STRIPE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lobber-secrets
+                  key: stripe_api_key
+            - name: STRIPE_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: lobber-secrets
+                  key: stripe_webhook_secret
+          resources:
+            limits:
+              cpu: "2"
+              memory: "1Gi"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 30
