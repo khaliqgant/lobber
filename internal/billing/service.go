@@ -22,9 +22,9 @@ const FreeTierBytes int64 = 5 * 1024 * 1024 * 1024
 
 // UsageRecord represents bandwidth usage for a tunnel session
 type UsageRecord struct {
-	ID              int64
-	UserID          int64
-	TunnelSessionID int64
+	ID              string
+	UserID          string
+	TunnelSessionID string
 	BytesIn         int64
 	BytesOut        int64
 	RecordedAt      time.Time
@@ -33,7 +33,7 @@ type UsageRecord struct {
 
 // UserBilling represents a user's billing information
 type UserBilling struct {
-	UserID             int64
+	UserID             string
 	StripeCustomerID   string
 	StripeSubscription string
 	Plan               Plan
@@ -60,7 +60,7 @@ func NewService(db *sql.DB, stripeKey string) *Service {
 }
 
 // RecordBandwidth records bandwidth usage for a user/tunnel
-func (s *Service) RecordBandwidth(ctx context.Context, userID, tunnelSessionID, bytesIn, bytesOut int64) error {
+func (s *Service) RecordBandwidth(ctx context.Context, userID, tunnelSessionID string, bytesIn, bytesOut int64) error {
 	if s.db == nil {
 		return nil // No-op if no database
 	}
@@ -77,7 +77,7 @@ func (s *Service) RecordBandwidth(ctx context.Context, userID, tunnelSessionID, 
 }
 
 // GetUserUsage returns total usage for a user in the current billing period
-func (s *Service) GetUserUsage(ctx context.Context, userID int64) (int64, error) {
+func (s *Service) GetUserUsage(ctx context.Context, userID string) (int64, error) {
 	if s.db == nil {
 		return 0, nil
 	}
@@ -99,7 +99,7 @@ func (s *Service) GetUserUsage(ctx context.Context, userID int64) (int64, error)
 
 // CheckQuota checks if user is within their quota
 // Returns (withinQuota, usedBytes, limitBytes, error)
-func (s *Service) CheckQuota(ctx context.Context, userID int64) (bool, int64, int64, error) {
+func (s *Service) CheckQuota(ctx context.Context, userID string) (bool, int64, int64, error) {
 	if s.db == nil {
 		return true, 0, FreeTierBytes, nil
 	}
@@ -138,7 +138,7 @@ func (s *Service) CheckQuota(ctx context.Context, userID int64) (bool, int64, in
 }
 
 // CreateCustomerForUser creates a Stripe customer for a user
-func (s *Service) CreateCustomerForUser(ctx context.Context, userID int64, email, name string) (string, error) {
+func (s *Service) CreateCustomerForUser(ctx context.Context, userID string, email, name string) (string, error) {
 	if s.stripe == nil {
 		return "", fmt.Errorf("stripe not configured")
 	}
@@ -163,7 +163,7 @@ func (s *Service) CreateCustomerForUser(ctx context.Context, userID int64, email
 }
 
 // UpgradeToPAYG upgrades a user to pay-as-you-go billing
-func (s *Service) UpgradeToPAYG(ctx context.Context, userID int64, priceID string) error {
+func (s *Service) UpgradeToPAYG(ctx context.Context, userID string, priceID string) error {
 	if s.db == nil || s.stripe == nil {
 		return fmt.Errorf("billing not configured")
 	}
@@ -221,7 +221,7 @@ func (s *Service) SyncUsageToStripe(ctx context.Context) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var userID int64
+		var userID string
 		var subscriptionID string
 		var totalBytes int64
 
@@ -242,7 +242,7 @@ func (s *Service) SyncUsageToStripe(ctx context.Context) error {
 		// Report usage
 		err = s.stripe.ReportUsage(sub.Items.Data[0].ID, totalBytes)
 		if err != nil {
-			return fmt.Errorf("report usage for user %d: %w", userID, err)
+			return fmt.Errorf("report usage for user %s: %w", userID, err)
 		}
 
 		// Mark as synced
@@ -259,19 +259,19 @@ func (s *Service) SyncUsageToStripe(ctx context.Context) error {
 
 // GetUsageSummary returns a usage summary for a user
 type UsageSummary struct {
-	UserID       int64
-	Plan         Plan
-	UsedBytes    int64
-	LimitBytes   int64
-	UsedGB       float64
-	LimitGB      float64
-	PercentUsed  float64
-	OverLimit    bool
-	PeriodStart  time.Time
-	PeriodEnd    time.Time
+	UserID      string
+	Plan        Plan
+	UsedBytes   int64
+	LimitBytes  int64
+	UsedGB      float64
+	LimitGB     float64
+	PercentUsed float64
+	OverLimit   bool
+	PeriodStart time.Time
+	PeriodEnd   time.Time
 }
 
-func (s *Service) GetUsageSummary(ctx context.Context, userID int64) (*UsageSummary, error) {
+func (s *Service) GetUsageSummary(ctx context.Context, userID string) (*UsageSummary, error) {
 	withinQuota, usedBytes, limitBytes, err := s.CheckQuota(ctx, userID)
 	if err != nil {
 		return nil, err

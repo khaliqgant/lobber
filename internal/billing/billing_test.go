@@ -95,7 +95,7 @@ func TestNewServiceWithStripe(t *testing.T) {
 func TestServiceRecordBandwidthNoDB(t *testing.T) {
 	// Should be a no-op without database
 	svc := NewService(nil, "")
-	err := svc.RecordBandwidth(nil, 1, 1, 100, 200)
+	err := svc.RecordBandwidth(nil, "user-1", "session-1", 100, 200)
 	if err != nil {
 		t.Errorf("RecordBandwidth without DB should not error, got: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestServiceRecordBandwidthNoDB(t *testing.T) {
 func TestServiceGetUserUsageNoDB(t *testing.T) {
 	// Should return 0 without database
 	svc := NewService(nil, "")
-	usage, err := svc.GetUserUsage(nil, 1)
+	usage, err := svc.GetUserUsage(nil, "user-1")
 	if err != nil {
 		t.Errorf("GetUserUsage without DB should not error, got: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestServiceGetUserUsageNoDB(t *testing.T) {
 func TestServiceCheckQuotaNoDB(t *testing.T) {
 	// Should return within quota without database
 	svc := NewService(nil, "")
-	withinQuota, used, limit, err := svc.CheckQuota(nil, 1)
+	withinQuota, used, limit, err := svc.CheckQuota(nil, "user-1")
 	if err != nil {
 		t.Errorf("CheckQuota without DB should not error, got: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestServiceCheckQuotaNoDB(t *testing.T) {
 func TestServiceCreateCustomerNoStripe(t *testing.T) {
 	// Should error without Stripe configured
 	svc := NewService(nil, "")
-	_, err := svc.CreateCustomerForUser(nil, 1, "test@example.com", "Test User")
+	_, err := svc.CreateCustomerForUser(nil, "user-1", "test@example.com", "Test User")
 	if err == nil {
 		t.Error("CreateCustomerForUser without Stripe should error")
 	}
@@ -143,7 +143,7 @@ func TestServiceCreateCustomerNoStripe(t *testing.T) {
 func TestUsageSummaryFields(t *testing.T) {
 	// Test that UsageSummary struct has expected fields
 	summary := &UsageSummary{
-		UserID:      1,
+		UserID:      "user-1",
 		Plan:        PlanFree,
 		UsedBytes:   1073741824, // 1GB
 		LimitBytes:  FreeTierBytes,
@@ -153,8 +153,8 @@ func TestUsageSummaryFields(t *testing.T) {
 		OverLimit:   false,
 	}
 
-	if summary.UserID != 1 {
-		t.Errorf("UserID = %d, want 1", summary.UserID)
+	if summary.UserID != "user-1" {
+		t.Errorf("UserID = %s, want user-1", summary.UserID)
 	}
 	if summary.Plan != PlanFree {
 		t.Errorf("Plan = %v, want %v", summary.Plan, PlanFree)
