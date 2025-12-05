@@ -1,0 +1,56 @@
+project_name: lobber
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: lobber
+    main: ./cmd/lobber
+    binary: lobber
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - format: tar.gz
+    # this name template makes the archives look like:
+    # lobber_1.0.0_Linux_x86_64.tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+# This section automatically updates a Homebrew tap repository
+# We will comment it out for now until the user creates the 'homebrew-tap' repo
+# brews:
+#   - name: lobber
+#     tap:
+#       owner: lobber-dev
+#       name: homebrew-tap
+#     folder: Formula
+#     homepage: "https://github.com/lobber-dev/lobber"
+#     description: "Expose your local apps to the internet with your own domain."
