@@ -2,8 +2,10 @@ package client
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -11,7 +13,7 @@ import (
 func TestClientForwardsRequests(t *testing.T) {
 	// Create a local server that will receive forwarded requests
 	localHits := make(chan *http.Request, 1)
-	localServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	localServer := startClientTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		localHits <- r
 		w.Header().Set("X-Local", "true")
 		w.WriteHeader(http.StatusOK)
@@ -49,4 +51,21 @@ func TestClientForwardsRequests(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Error("local server not hit")
 	}
+}
+
+func startClientTestServer(t *testing.T, handler http.Handler) *httptest.Server {
+	t.Helper()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		if strings.Contains(err.Error(), "operation not permitted") {
+			t.Skipf("skipping test server start: %v", err)
+		}
+		t.Fatalf("listen error: %v", err)
+	}
+
+	srv := httptest.NewUnstartedServer(handler)
+	srv.Listener = ln
+	srv.Start()
+	return srv
 }

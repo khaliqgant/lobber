@@ -29,9 +29,11 @@ func run() error {
 	// Connect to database
 	database, err := db.New(ctx)
 	if err != nil {
-		return fmt.Errorf("database: %w", err)
+		log.Printf("Warning: database connection failed, continuing without DB: %v", err)
+		database = nil
+	} else {
+		defer database.Close()
 	}
-	defer database.Close()
 
 	// Create server config with Stripe settings
 	config := relay.DefaultServerConfig()

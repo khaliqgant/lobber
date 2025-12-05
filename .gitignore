@@ -17,3 +17,4 @@
 
 # Test coverage
 coverage.out
+.cache

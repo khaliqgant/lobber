@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,7 +18,7 @@ import (
 
 func TestEndToEndTunnel(t *testing.T) {
 	// 1. Start a local HTTP server that we want to expose
-	localServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	localServer := startTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Local-Server", "true")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("hello from local"))
@@ -25,7 +27,7 @@ func TestEndToEndTunnel(t *testing.T) {
 
 	// 2. Start relay server (in-memory, no real TLS)
 	relayServer := relay.NewServer(nil)
-	relayHTTP := httptest.NewServer(relayServer)
+	relayHTTP := startTestServer(t, relayServer)
 	defer relayHTTP.Close()
 
 	// 3. Create and connect client
@@ -98,7 +100,7 @@ func TestEndToEndTunnel(t *testing.T) {
 func TestTunnelHandshake(t *testing.T) {
 	// Test that client can connect and register with relay
 	relayServer := relay.NewServer(nil)
-	relayHTTP := httptest.NewServer(relayServer)
+	relayHTTP := startTestServer(t, relayServer)
 	defer relayHTTP.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -116,4 +118,21 @@ func TestTunnelHandshake(t *testing.T) {
 	if !relayServer.HasTunnel("myapp.example.com") {
 		t.Error("tunnel not registered after Connect()")
 	}
+}
+
+func startTestServer(t *testing.T, handler http.Handler) *httptest.Server {
+	t.Helper()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		if strings.Contains(err.Error(), "operation not permitted") {
+			t.Skipf("skipping test server start: %v", err)
+		}
+		t.Fatalf("listen error: %v", err)
+	}
+
+	srv := httptest.NewUnstartedServer(handler)
+	srv.Listener = ln
+	srv.Start()
+	return srv
 }
