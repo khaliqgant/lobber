@@ -1,8 +1,10 @@
 package relay
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/lobber-dev/lobber/internal/auth"
@@ -10,7 +12,7 @@ import (
 
 func TestConnectRequiresAuth(t *testing.T) {
 	s := NewServer(nil)
-	srv := httptest.NewServer(s)
+	srv := startTestServer(t, s)
 	defer srv.Close()
 
 	// Request without auth should fail
@@ -44,7 +46,7 @@ func TestConnectWithValidToken(t *testing.T) {
 		return "", false
 	})
 
-	srv := httptest.NewServer(s)
+	srv := startTestServer(t, s)
 	defer srv.Close()
 
 	// Request with valid token should succeed (will hijack connection)
@@ -64,4 +66,21 @@ func TestConnectWithValidToken(t *testing.T) {
 	if resp.StatusCode == http.StatusUnauthorized {
 		t.Error("valid token should not return 401")
 	}
+}
+
+func startTestServer(t *testing.T, handler http.Handler) *httptest.Server {
+	t.Helper()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		if strings.Contains(err.Error(), "operation not permitted") {
+			t.Skipf("skipping test server start: %v", err)
+		}
+		t.Fatalf("listen error: %v", err)
+	}
+
+	srv := httptest.NewUnstartedServer(handler)
+	srv.Listener = ln
+	srv.Start()
+	return srv
 }

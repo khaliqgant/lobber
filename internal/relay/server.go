@@ -25,18 +25,18 @@ type TokenValidator func(token string) (string, bool)
 type TunnelState int
 
 const (
-	TunnelStateConnected  TunnelState = iota // Connection established, waiting for ready
-	TunnelStateReady                         // Ready frame received, can process requests
-	TunnelStateClosed                        // Connection closed
+	TunnelStateConnected TunnelState = iota // Connection established, waiting for ready
+	TunnelStateReady                        // Ready frame received, can process requests
+	TunnelStateClosed                       // Connection closed
 )
 
 // ServerConfig holds configurable parameters for the relay server
 type ServerConfig struct {
-	MaxPendingQueue   int           // Max requests to queue before tunnel ready (default 100)
-	PendingQueueTTL   time.Duration // Max time a request can wait in queue (default 5s)
-	StripeAPIKey      string        // Stripe API key for billing
-	StripeWebhookKey  string        // Stripe webhook signing secret
-	BaseDomain        string        // Base domain for the application (e.g., lobber.dev)
+	MaxPendingQueue  int           // Max requests to queue before tunnel ready (default 100)
+	PendingQueueTTL  time.Duration // Max time a request can wait in queue (default 5s)
+	StripeAPIKey     string        // Stripe API key for billing
+	StripeWebhookKey string        // Stripe webhook signing secret
+	BaseDomain       string        // Base domain for the application (e.g., lobber.dev)
 }
 
 // DefaultServerConfig returns sensible defaults
@@ -137,51 +137,45 @@ func NewServerWithConfig(database *db.DB, config *ServerConfig) *Server {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Check if this is an internal route
+	// Internal routes
 	if r.URL.Path == "/health" || r.URL.Path == "/_lobber/connect" || r.URL.Path == "/stripe/webhook" {
 		s.mux.ServeHTTP(w, r)
 		return
 	}
 
-	// Serve static files
+	// Static assets
 	if strings.HasPrefix(r.URL.Path, "/static/") {
 		s.staticHandler.ServeHTTP(w, r)
 		return
 	}
 
-	// Route dashboard requests
-	if strings.HasPrefix(r.URL.Path, "/dashboard") && s.dashboardHandler != nil {
+	// Dashboard
+	if strings.HasPrefix(r.URL.Path, "/dashboard") {
+		if s.dashboardHandler == nil {
+			http.Error(w, "dashboard unavailable", http.StatusServiceUnavailable)
+			return
+		}
 		s.dashboardHandler.ServeHTTP(w, r)
 		return
 	}
 
-	// Check if this is the main domain (not a tunnel subdomain)
-	// Only serve landing pages if BaseDomain is configured and matches,
-	// or if we're on localhost for local development
-	host := r.Host
-	if idx := strings.Index(host, ":"); idx != -1 {
-		host = host[:idx] // strip port
+	// Tunnel routing vs landing fallback
+	host := stripPort(r.Host)
+	if s.HasTunnel(host) {
+		s.handleProxy(w, r)
+		return
 	}
-	isMainDomain := (s.config.BaseDomain != "" && host == s.config.BaseDomain) || host == "localhost"
 
-	if isMainDomain {
-		// Serve landing page for explicit routes
-		if r.URL.Path == "/" || r.URL.Path == "/index.html" ||
-			r.URL.Path == "/about" || r.URL.Path == "/pricing" {
-			http.ServeFile(w, r, "web/landing/index.html")
+	if isPrimaryHost(host, s.config.BaseDomain) {
+		if s.landingHandler != nil {
+			s.landingHandler.ServeHTTP(w, r)
 			return
 		}
-		if r.URL.Path == "/styles.css" {
-			http.ServeFile(w, r, "web/landing/styles.css")
-			return
-		}
-		// Main domain but no route matched - return 404
 		http.NotFound(w, r)
 		return
 	}
 
-	// Otherwise, try to route to a tunnel based on Host header
-	s.handleProxy(w, r)
+	http.Error(w, "tunnel not found", http.StatusBadGateway)
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -602,4 +596,22 @@ func (s *Server) GetTunnel(domain string) *Tunnel {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.tunnels[domain]
+}
+
+func stripPort(hostport string) string {
+	if host, _, ok := strings.Cut(hostport, ":"); ok {
+		return host
+	}
+	return hostport
+}
+
+func isPrimaryHost(host, baseDomain string) bool {
+	base := strings.TrimSpace(baseDomain)
+	if base != "" && host == base {
+		return true
+	}
+	if host == "" || host == "localhost" || strings.HasPrefix(host, "127.") {
+		return true
+	}
+	return false
 }
