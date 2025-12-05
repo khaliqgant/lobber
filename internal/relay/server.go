@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lobber-dev/lobber/internal/billing"
 	"github.com/lobber-dev/lobber/internal/db"
 	"github.com/lobber-dev/lobber/internal/tunnel"
 )
@@ -29,9 +30,12 @@ const (
 )
 
 // ServerConfig holds configurable parameters for the relay server
+// ServerConfig holds configurable parameters for the relay server
 type ServerConfig struct {
-	MaxPendingQueue int           // Max requests to queue before tunnel ready (default 100)
-	PendingQueueTTL time.Duration // Max time a request can wait in queue (default 5s)
+	MaxPendingQueue   int           // Max requests to queue before tunnel ready (default 100)
+	PendingQueueTTL   time.Duration // Max time a request can wait in queue (default 5s)
+	StripeAPIKey      string        // Stripe API key for billing
+	StripeWebhookKey  string        // Stripe webhook signing secret
 }
 
 // DefaultServerConfig returns sensible defaults
