@@ -5,8 +5,9 @@ Expose localhost to the internet with your own domain. No random subdomains.
 ## How it works
 
 1. Add a CNAME record: `app.yourdomain.com → tunnel.lobber.dev`
-2. Run: `lobber up app.yourdomain.com:3000`
-3. Your local app is live at `https://app.yourdomain.com`
+2. Run your app locally on `localhost:3000`
+3. Run: `lobber up app.yourdomain.com:3000`
+4. Traffic to `https://app.yourdomain.com` is tunneled to `localhost:3000`
 
 ## Install
 
