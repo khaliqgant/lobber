@@ -12,6 +12,7 @@ import (
 const (
 	TypeRequest  byte = 0x01
 	TypeResponse byte = 0x02
+	TypeReady    byte = 0x03
 )
 
 // Request represents an HTTP request to forward through tunnel
@@ -57,6 +58,47 @@ func DecodeResponse(r io.Reader) (*Response, error) {
 		return nil, err
 	}
 	return &resp, nil
+}
+
+// EncodeReady writes a ready frame to signal client is ready for requests
+func EncodeReady(w io.Writer) error {
+	// Ready frame: [type:1][length:4=0] (no payload)
+	if err := binary.Write(w, binary.BigEndian, TypeReady); err != nil {
+		return fmt.Errorf("write ready type: %w", err)
+	}
+	if err := binary.Write(w, binary.BigEndian, uint32(0)); err != nil {
+		return fmt.Errorf("write ready length: %w", err)
+	}
+	return nil
+}
+
+// DecodeReady reads and validates a ready frame
+func DecodeReady(r io.Reader) error {
+	var msgType byte
+	if err := binary.Read(r, binary.BigEndian, &msgType); err != nil {
+		return fmt.Errorf("read ready type: %w", err)
+	}
+	if msgType != TypeReady {
+		return fmt.Errorf("unexpected message type: got %d, want %d (ready)", msgType, TypeReady)
+	}
+
+	var length uint32
+	if err := binary.Read(r, binary.BigEndian, &length); err != nil {
+		return fmt.Errorf("read ready length: %w", err)
+	}
+	if length != 0 {
+		return fmt.Errorf("ready frame should have zero length, got %d", length)
+	}
+	return nil
+}
+
+// ReadFrameType peeks at the next frame type without consuming payload
+func ReadFrameType(r io.Reader) (byte, error) {
+	var msgType byte
+	if err := binary.Read(r, binary.BigEndian, &msgType); err != nil {
+		return 0, fmt.Errorf("read frame type: %w", err)
+	}
+	return msgType, nil
 }
 
 func encodeMessage(w io.Writer, msgType byte, v any) error {
